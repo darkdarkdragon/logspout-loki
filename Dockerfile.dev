@@ -1,0 +1,35 @@
+FROM alpine:3.8 as builder
+# ENTRYPOINT ["/bin/logspout"]
+VOLUME /mnt/routes
+EXPOSE 80
+
+ENV GOPATH /go
+RUN mkdir /go
+RUN apk --no-cache add go build-base git mercurial ca-certificates
+RUN go get -u -v github.com/livepeer/loki-client/client
+RUN go get -u -v github.com/livepeer/loki-client/model
+RUN go get -u -v github.com/gogo/protobuf/proto
+RUN go get -u -v github.com/golang/snappy
+RUN go get -u -v github.com/livepeer/loki-client/client
+RUN go get -u -v github.com/fsouza/go-dockerclient
+RUN go get -u -v github.com/gorilla/mux
+
+
+COPY . /go/src/github.com/gliderlabs/logspout
+WORKDIR /go/src/github.com/gliderlabs/logspout
+# RUN go get
+RUN go build -ldflags "-X main.Version=dev" -o /bin/logspout 
+	# && exec /bin/logspout
+
+FROM alpine:3.8
+
+ENV GOPATH /go
+VOLUME /mnt/routes
+EXPOSE 80
+COPY --from=builder /bin/logspout /bin/logspout
+
+# docker build -t darkdragon/logspout-loki -f Dockerfile.dev .
+# docker run  --volume=/var/run/docker.sock:/var/run/docker.sock  gliderlabs/logspout  raw://192.168.10.10:5000?filter.sources=stdout%2Cstderr
+# docker run --rm --name spout  --volume=/var/run/docker.sock:/var/run/docker.sock  darkdragon/logspout-loki  loki://loki:3100/api/prom/push?filter.sources=stderr
+# docker run --rm --name spout  --volume=/var/run/docker.sock:/var/run/docker.sock  darkdragon/logspout-loki /bin/logspout loki://loki:3100/api/prom/push?filter.sources=stderr
+# docker run --rm --name spout  --volume=/var/run/docker.sock:/var/run/docker.sock  darkdragon/logspout-loki /bin/logspout loki://loki:3100/api/prom/push?filter.sources=stdout%2Cstderr
