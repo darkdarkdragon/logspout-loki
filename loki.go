@@ -33,11 +33,16 @@ type LokiAdapter struct {
 	client *lokiclient.Client
 }
 
+func logger(v ...interface{}) {
+	fmt.Println(v...)
+}
+
 // NewLokiAdapter creates a LokiAdapter.
 func NewLokiAdapter(route *router.Route) (router.LogAdapter, error) {
 	baseLabels := model.LabelSet{}
 	lokiURL := "http://" + route.Address + "/api/prom/push"
-	client, err := lokiclient.NewWithDefaults(lokiURL, baseLabels, nil)
+	fmt.Printf("Using Loki url: %s\n", lokiURL)
+	client, err := lokiclient.NewWithDefaults(lokiURL, baseLabels, logger)
 	if err != nil {
 		return nil, err
 	}
